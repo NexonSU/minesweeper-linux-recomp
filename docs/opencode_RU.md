@@ -13,7 +13,7 @@
 "Strata": {
   "npm": "@ai-sdk/openai-compatible",
   "name": "Strata (Local)",
-  "options": { "baseURL": "http://192.168.50.4:8080/v1" },
+  "options": { "baseURL": "http://127.0.0.1:8080/v1" },
   "models": {
     "qwen3.8-flash-next-iq3_xxs": {
       "limit": { "context": 100000, "output": 50000 }
