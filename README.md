@@ -34,9 +34,13 @@ the right (Expert 30×16/99, Game menu open) next to the original
    question, mine, exploded), counters, first-click-is-safe logic,
    flood-fill through a 100-slot ring queue (exactly like the original),
    chords, pause, the XYZZY code.
-3. **Porting.** Independent code written in C11 + SDL2/SDL2_image/SDL2_ttf:
-   custom menu bar, Win95-style modal dialogs (Custom Field, Best Times,
-   About, name entry), persistence in `~/.config/winmine/winmine.cfg`.
+3. **Porting.** Independent code written in C11 + SDL2: custom menu bar,
+   Win95-style modal dialogs (Custom Field, Best Times, About, name entry),
+   persistence in `~/.config/winmine/winmine.cfg`.  PNG sprites are decoded
+   with vendored `stb_image`; menu/dialog text is drawn from a pre-rendered
+   DejaVuSans glyph atlas (dumped offline with FreeType, pixel-identical to
+   SDL2_ttf's output) embedded in the binary — no SDL2_image/SDL2_ttf or
+   font files are needed at runtime.
 4. **Verification.** Port behavior compared against the original running
    under wine: dialog screenshots, click/counter tracing, quirk checks
    (F4 does not persist sound, Custom changes difficulty even on Cancel,
@@ -65,23 +69,38 @@ OpenCode session.
 
 ## Build
 
-Dependencies: `sdl2`, `sdl2_image`, `sdl2_ttf` (pkg-config).
+The default build bundles all dependencies into the binary: it statically
+links SDL2 2.32.10 built from source, decodes PNGs with vendored `stb_image`
+and renders text from the embedded glyph atlas.  The resulting `winmine`
+needs no SDL/font packages installed (X11/Wayland and ALSA/PulseAudio
+backends are loaded dynamically at runtime).
 
 ```sh
-make        # -> ./winmine
+make deps     # fetch + build static SDL2 2.32.10 (needs curl, cmake, X11 dev headers)
+make          # -> ./winmine (~2.5 MB, statically linked)
 ./winmine
 ```
 
-`assets/` must sit next to the binary (or at `./assets` relative to cwd);
-`WINMINE.HLP` lives there too, used by the Help menu entry.
+Quick alternative linked against the system shared SDL2 (only the `sdl2`
+pkg-config package required):
+
+```sh
+make sys
+```
+
+`assets/` must sit next to the binary (resolved via `/proc/self/exe`, else
+`./assets` relative to cwd); `WINMINE.HLP` lives there too, used by the Help
+menu entry.
 
 ## Layout
 
 ```
-src/        port sources (C11 + SDL2)
-assets/     sprites, WAVs, icon, HLP extracted from the original
-docs/       Strata engine and OpenCode configuration descriptions, screenshots
-Makefile    build
+src/          port sources (C11 + SDL2)
+tools/        offline glyph-atlas dumper (FreeType), DejaVu subset + license
+third_party/  vendored stb_image (SDL2 source is fetched by `make deps`)
+assets/       sprites, WAVs, icon, HLP extracted from the original
+docs/         Strata engine and OpenCode configuration descriptions, screenshots
+Makefile      build
 ```
 
 ## License
@@ -92,3 +111,9 @@ the original `WINMINE.EXE` and its code are not present in this repository.
 
 Files in `assets/` are extracted from `WINMINE.EXE`, remain Microsoft
 property and are **not** licensed under MIT — see [`NOTICE`](NOTICE).
+
+Third-party components: `third_party/stb/` (stb_image, public domain);
+`tools/DejaVuSans-subset.ttf` (DejaVu Sans subset under the Bitstream Vera
+license, see `tools/DejaVuSans-LICENSE.txt`) whose pre-rendered glyphs are
+embedded into the binary as `src/font_atlas.h`; SDL2 (zlib license) is
+fetched and built locally by `make deps` and is not part of the repository.

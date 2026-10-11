@@ -7,15 +7,45 @@
  * and verified against a wine capture.
  */
 #include "winmine.h"
-#include <SDL2/SDL_image.h>
+#include "font_atlas.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
 
-/* ---------------- fonts & colors ---------------- */
+/* ---------------- embedded glyph atlas text engine ----------------
+ * UI text is rendered from a pre-rendered DejaVuSans glyph atlas embedded in
+ * the binary (src/font_atlas.h, dumped offline with tools/dump_font.c).  The
+ * dump reproduces the hinted FreeType bitmaps, advances and metrics that
+ * SDL_ttf 2.24 produces internally (layout: pos_x = x + kern_dx, x += adv,
+ * ink bounding box, ascent/height formulas), so the text is pixel-identical
+ * to the SDL_ttf reference build while the shipped binary needs no font
+ * engine at all.
+ */
 
-static TTF_Font *f_menu, *f_dlg;
+typedef struct {
+    short adv, left, top;
+    unsigned char w, h;
+    const unsigned char *cov;
+} AGlyph;
+
+typedef struct {
+    unsigned char prev, cur;
+    short dx, dy;
+} AKern;
+
+typedef struct {
+    int size, ascent, height, nglyphs, base_cp;
+    AGlyph glyphs[95];
+    int npairs;
+    AKern pairs[512];
+} AFont;
+
+static AFont g_fonts[8];
+static int g_nfonts;
+static const AFont *f_menu, *f_dlg;
+
+/* ---------------- colors ---------------- */
 
 #define COL_FACE 0xC0C0C0u
 #define COL_NAVY 0x000080u
@@ -27,33 +57,75 @@ static TTF_Font *f_menu, *f_dlg;
 static const SDL_Color col_text  = {0, 0, 0, 255};
 static const SDL_Color col_white = {255, 255, 255, 255};
 
-static char g_font_path[512] = "";
+static const AFont *font_of(int size);
+
+static int a8(const unsigned char **p) { return *(*p)++; }
+static int a16(const unsigned char **p)
+{
+    int v = (short)((*p)[0] | ((*p)[1] << 8));
+    *p += 2;
+    return v;
+}
 
 void ui_init(void)
 {
-    static const char *paths[] = {
-        "/usr/share/fonts/TTF/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    };
-    const char *font = NULL;
-    for (unsigned i = 0; i < sizeof(paths) / sizeof(paths[0]); i++)
-        if (access(paths[i], R_OK) == 0) { font = paths[i]; break; }
-    if (TTF_Init() != 0) {
-        SDL_Log("TTF_Init failed: %s", SDL_GetError());
+    const unsigned char *p = tools_font_atlas_bin;
+    if (tools_font_atlas_bin_len < 12 || memcmp(p, "WMFA", 4) != 0) {
+        SDL_Log("ui: font atlas missing");
         return;
     }
-    if (font) snprintf(g_font_path, sizeof(g_font_path), "%s", font);
-    f_menu = font ? TTF_OpenFont(font, 13) : NULL;
-    f_dlg  = font ? TTF_OpenFont(font, 12) : NULL;
+    p += 4;
+    int ver = a16(&p);
+    a16(&p);                                   /* reserved */
+    if (ver != 2) { SDL_Log("ui: font atlas version %d unsupported", ver); return; }
+    int ns = a8(&p);
+    if (ns > 8) { SDL_Log("ui: font atlas too many sizes"); return; }
+    for (int i = 0; i < ns; i++)
+        g_fonts[i].size = a8(&p);
+    for (int i = 0; i < ns; i++) {
+        AFont *f = &g_fonts[i];
+        f->ascent = a16(&p);
+        f->height = a16(&p);
+        f->nglyphs = a8(&p);
+        f->base_cp = a8(&p);
+        for (int g = 0; g < f->nglyphs; g++) {
+            f->glyphs[g].adv = a16(&p);
+            f->glyphs[g].left = a16(&p);
+            f->glyphs[g].top = a16(&p);
+            f->glyphs[g].w = a8(&p);
+            f->glyphs[g].h = a8(&p);
+            f->glyphs[g].cov = p;
+            p += (size_t)f->glyphs[g].w * f->glyphs[g].h;
+        }
+        int np = a16(&p);
+        f->npairs = 0;
+        for (int k = 0; k < np; k++) {
+            AKern tmp;
+            tmp.prev = a8(&p);
+            tmp.cur = a8(&p);
+            tmp.dx = a16(&p);
+            tmp.dy = a16(&p);
+            if (f->npairs < 512)
+                f->pairs[f->npairs++] = tmp;
+        }
+    }
+    g_nfonts = ns;
+    f_menu = font_of(13);
+    f_dlg = font_of(12);
     if (!f_menu || !f_dlg)
-        SDL_Log("ui: could not open UI font: %s", SDL_GetError());
+        SDL_Log("ui: font atlas sizes incomplete");
 }
 
 void ui_free(void)
 {
-    if (f_menu) { TTF_CloseFont(f_menu); f_menu = NULL; }
-    if (f_dlg)  { TTF_CloseFont(f_dlg);  f_dlg  = NULL; }
-    TTF_Quit();
+}
+
+static const AFont *font_of(int size)
+{
+    for (int i = 0; i < g_nfonts; i++)
+        if (g_fonts[i].size == size)
+            return &g_fonts[i];
+    return NULL;
 }
 
 /* ---------------- tiny draw helpers ---------------- */
@@ -101,21 +173,105 @@ static void bevel_sunken(SDL_Surface *s, int x, int y, int w, int h)
     vline(s, x + w - 1, y, y + h - 1, COL_WHT);
 }
 
-static SDL_Surface *txt_surf(const char *s, SDL_Color c, TTF_Font *f)
+static int fl64(int v) { return v >= 0 ? v >> 6 : -((-v + 63) >> 6); }
+
+static const AGlyph *glyph_at(const AFont *f, int cp)
 {
-    return TTF_RenderText_Blended(f, s, c);
+    if (!f || cp < f->base_cp || cp >= f->base_cp + f->nglyphs) return NULL;
+    return &f->glyphs[cp - f->base_cp];
 }
 
-static int txt_w(const char *s, TTF_Font *f)
+#define MAXTXT 256
+typedef struct { const AGlyph *g; int px, py; } APlaced;
+
+/* SDL_ttf 2.24 layout: pos_x = x + kern_dx; x += adv; bounding box is the
+ * union of the ink bitmaps (minx/miny start at 0, maxy at font height)
+ * extended by the final pen position. */
+static int layout(const AFont *f, const char *s, APlaced *out,
+                  int *minx, int *maxx, int *miny, int *maxy)
 {
-    int w = 0, h = 0;
-    if (f) TTF_SizeText(f, s, &w, &h);
-    return w;
+    int x = 0, prev = 0, n = 0;
+    *minx = 0; *maxx = 0; *miny = 0; *maxy = f->height;
+    for (const unsigned char *p = (const unsigned char *)s; *p && n < MAXTXT; p++) {
+        const AGlyph *g = glyph_at(f, *p);
+        if (!g) continue;
+        int dx = 0, dy = 0;
+        for (int k = 0; k < f->npairs && prev; k++)
+            if (f->pairs[k].prev == prev && f->pairs[k].cur == *p) {
+                dx = f->pairs[k].dx; dy = f->pairs[k].dy; break;
+            }
+        int posx = x + dx, posy = f->ascent * 64 + dy;
+        x += g->adv;
+        prev = *p;
+        out[n].g = g;
+        out[n].px = fl64(posx) + g->left;
+        out[n].py = fl64(posy) - g->top;
+        if (out[n].px < *minx) *minx = out[n].px;
+        if (out[n].px + g->w > *maxx) *maxx = out[n].px + g->w;
+        if (out[n].py < *miny) *miny = out[n].py;
+        if (out[n].py + g->h > *maxy) *maxy = out[n].py + g->h;
+        n++;
+    }
+    if (fl64(x) > *maxx) *maxx = fl64(x);
+    return n;
 }
 
-static int txt_h(TTF_Font *f)
+static SDL_Surface *txt_surf(const char *s, SDL_Color c, const AFont *f)
 {
-    return f ? TTF_FontLineSkip(f) : 14;
+    if (!f) return NULL;
+    APlaced pl[MAXTXT];
+    int minx, maxx, miny, maxy;
+    int n = layout(f, s, pl, &minx, &maxx, &miny, &maxy);
+    int w = maxx - minx, h = maxy - miny;
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
+    int xoff = minx < 0 ? -minx : 0, yoff = miny < 0 ? -miny : 0;
+    SDL_Surface *t = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_ARGB8888);
+    if (!t) return NULL;
+    SDL_SetSurfaceBlendMode(t, SDL_BLENDMODE_BLEND);
+    /* SDL_ttf blended model (Create_Surface_Blended + BG_Blended[_Opaque]):
+     * buffer pre-filled with the fg color at alpha 0, glyph coverage OR-ed
+     * into the alpha byte.  Reproduced here pixel-for-pixel. */
+    Uint32 fill = (Uint32)c.r << 16 | (Uint32)c.g << 8 | c.b;
+    Uint32 *pix = (Uint32 *)t->pixels;
+    for (size_t i = 0; i < (size_t)w * h; i++)
+        pix[i] = fill;
+    for (int i = 0; i < n; i++) {
+        const AGlyph *g = pl[i].g;
+        int gx = xoff + pl[i].px, gy = yoff + pl[i].py;
+        for (int r = 0; r < g->h; r++) {
+            int y = gy + r;
+            if (y < 0 || y >= h) continue;
+            Uint32 *dst = pix + (size_t)y * (t->pitch / 4) + gx;
+            const unsigned char *cov = g->cov + (size_t)r * g->w;
+            for (int q = 0; q < g->w; q++) {
+                int x = gx + q;
+                if (x < 0 || x >= w) continue;
+                unsigned a = cov[q];
+                if (c.a != 255) {
+                    unsigned t2 = a * c.a;          /* DIVIDE_BY_255(t2) */
+                    a = (t2 + 127 + (t2 >> 8)) >> 8;
+                }
+                if (a)
+                    dst[q] |= (Uint32)a << 24;
+            }
+        }
+    }
+    return t;
+}
+
+static int txt_w(const char *s, const AFont *f)
+{
+    if (!f) return 0;
+    APlaced pl[MAXTXT];
+    int minx, maxx, miny, maxy;
+    layout(f, s, pl, &minx, &maxx, &miny, &maxy);
+    return maxx - minx;
+}
+
+static int txt_h(const AFont *f)
+{
+    return f ? f->height : 14;
 }
 
 /* render text, shrinking the dialog font until it fits maxw (MS Sans Serif
@@ -126,17 +282,13 @@ static SDL_Surface *txt_surf_fit(const char *s, SDL_Color c, int maxw)
     int size = 12;
     while (size > 8 && w12 * size / 12 > maxw)
         size--;
-    if (size == 12 || !g_font_path[0])
-        return txt_surf(s, c, f_dlg);
-    TTF_Font *f = TTF_OpenFont(g_font_path, size);
-    if (!f) return txt_surf(s, c, f_dlg);
-    SDL_Surface *t = TTF_RenderText_Blended(f, s, c);
-    TTF_CloseFont(f);
-    return t;
+    const AFont *f = font_of(size);
+    return txt_surf(s, c, f ? f : f_dlg);
 }
 
 static void blit(SDL_Surface *dst, SDL_Surface *s, int x, int y)
 {
+    if (!s) return;
     SDL_Rect r = {x, y, 0, 0};
     SDL_BlitSurface(s, NULL, dst, &r);
     SDL_FreeSurface(s);
@@ -144,7 +296,7 @@ static void blit(SDL_Surface *dst, SDL_Surface *s, int x, int y)
 
 /* draw text with a mnemonic underline under s[mark] */
 static void draw_text_mark(SDL_Surface *dst, const char *s, int mark,
-                           int x, int y, SDL_Color c, TTF_Font *f)
+                           int x, int y, SDL_Color c, const AFont *f)
 {
     blit(dst, txt_surf(s, c, f), x, y);
     if (mark < 0 || !f) return;
@@ -157,7 +309,7 @@ static void draw_text_mark(SDL_Surface *dst, const char *s, int mark,
     int pw = txt_w(buf, f);
     char ch[2] = {s[mark], 0};
     int cw = txt_w(ch, f);
-    int uy = y + TTF_FontAscent(f) + 1;
+    int uy = y + f->ascent + 1;
     hline(dst, x + pw, x + pw + cw - 1, uy, c.r << 16 | c.g << 8 | c.b);
 }
 
@@ -540,8 +692,8 @@ static SDL_Surface *load_icon(void)
     static SDL_Surface *ic;
     if (!ic) {
         char path[600];
-        snprintf(path, sizeof(path), "%s/icon_8.ico", render_asset_dir());
-        ic = IMG_Load(path);
+        snprintf(path, sizeof(path), "%s/icon_8.png", render_asset_dir());
+        ic = stb_load_surface(path);
     }
     return ic;
 }
@@ -565,19 +717,17 @@ static void draw_button(SDL_Surface *s, const Ctl *c, int is_def)
         dotted_rect(s, c->x + 3, c->y + 3, c->w - 6, c->h - 6);
     }
     /* shrink font (like txt_surf_fit) when the label is wider than the button */
-    TTF_Font *f = f_dlg;
+    const AFont *f = f_dlg;
     int tw = txt_w(c->text, f), th = txt_h(f), size = 12;
-    while (size > 8 && tw > c->w - 6 && g_font_path[0]) {
-        TTF_Font *nf = TTF_OpenFont(g_font_path, --size);
+    while (size > 8 && tw > c->w - 6) {
+        const AFont *nf = font_of(--size);
         if (!nf) break;
-        if (f != f_dlg) TTF_CloseFont(f);
         f = nf;
         tw = txt_w(c->text, f);
         th = txt_h(f);
     }
     draw_text_mark(s, c->text, c->mark, c->x + (c->w - tw) / 2,
                    c->y + (c->h - th) / 2, col_text, f);
-    if (f != f_dlg) TTF_CloseFont(f);
 }
 
 static void draw_edit(SDL_Surface *s, const Ctl *c, const char *text, int focused, int caret_on)

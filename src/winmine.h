@@ -3,7 +3,6 @@
 #define WINMINE_H
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 
 /* ---- grid model (mirrors DAT_01005340[32*27], 1-based playfield, 0-based border ring) ---- */
@@ -91,6 +90,7 @@ void gm_pause(void);                      /* 341c */
 void gm_resume(void);                     /* 344c */
 
 /* ---- rendering (render.c) ---- */
+SDL_Surface *stb_load_surface(const char *path);   /* PNG -> ARGB8888 (stb_image) */
 int  render_init(const char *asset_dir);
 const char *render_asset_dir(void);
 void render_free_assets(void);

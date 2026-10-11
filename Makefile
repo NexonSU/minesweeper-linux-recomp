@@ -1,16 +1,53 @@
 CC ?= gcc
-PKG := sdl2 SDL2_image SDL2_ttf
-CFLAGS ?= -O2 -Wall -Wextra -std=c11
-CFLAGS += $(shell pkg-config --cflags $(PKG))
-LDLIBS := $(shell pkg-config --libs $(PKG)) -lm
+CFLAGS ?= -O2 -Wall -Wextra -std=gnu11
 
-SRC := src/main.c src/game.c src/render.c src/ui.c src/config.c src/sound.c
-HDR := src/winmine.h
+# Bundled static SDL2: `make deps` fetches and builds it once; the default
+# build links libSDL2.a statically, so the shipped binary needs no SDL
+# packages at runtime (X11/ALSA/PulseAudio are loaded dynamically).
+SDL_VER   := 2.32.10
+SDL_DIR   := third_party/SDL2-release-$(SDL_VER)
+SDL_BUILD := build/SDL2
+SDL_LIB   := $(SDL_BUILD)/libSDL2.a
 
-winmine: $(SRC) $(HDR)
-	$(CC) $(CFLAGS) -o $@ $(SRC) $(LDLIBS)
+SRC := src/main.c src/game.c src/render.c src/ui.c src/config.c src/sound.c src/stb_impl.c
+HDR := src/winmine.h src/font_atlas.h
+
+# Default: static build against the bundled SDL2 (images via stb_image,
+# text via the embedded glyph atlas; no SDL2_image / SDL2_ttf anywhere).
+winmine: $(SRC) $(HDR) $(SDL_LIB)
+	$(CC) $(CFLAGS) -I$(SDL_DIR)/include -Ithird_party/stb -o $@ $(SRC) $(SDL_LIB) -ldl -lpthread -lm
+
+# Quick build against the system shared SDL2 (only `sdl2` is required).
+sys: $(SRC) $(HDR)
+	$(CC) $(CFLAGS) -Ithird_party/stb $$(pkg-config --cflags sdl2) -o winmine $(SRC) $$(pkg-config --libs sdl2) -ldl -lpthread -lm
+
+# Fetch + build the bundled static SDL2 (needs cmake and the X11/ALSA dev headers).
+deps: $(SDL_LIB)
+
+$(SDL_DIR):
+	mkdir -p third_party build
+	curl -sfL -o build/SDL2.tar.gz https://github.com/libsdl-org/SDL/archive/refs/tags/release-$(SDL_VER).tar.gz
+	tar xzf build/SDL2.tar.gz -C third_party
+	rm -f build/SDL2.tar.gz
+
+$(SDL_LIB): $(SDL_DIR)
+	cmake -S $(SDL_DIR) -B $(SDL_BUILD) -DCMAKE_BUILD_TYPE=Release \
+		-DSDL_STATIC=ON -DSDL_SHARED=OFF -DSDL_TESTS=OFF \
+		-DSDL_HAPTIC=OFF -DSDL_JOYSTICK=OFF -DSDL_SENSOR=OFF -DSDL_HIDAPI=OFF \
+		-DSDL_LIBUDEV=OFF -DSDL_DBUS=OFF -DSDL_IBUS=OFF -DSDL_KMSDRM=OFF \
+		-DSDL_X11=ON -DSDL_WAYLAND=ON -DSDL_ALSA=ON -DSDL_PULSEAUDIO=ON
+	cmake --build $(SDL_BUILD) -j4
+
+# Regenerate the embedded glyph atlas (needs FreeType dev headers + pyftsubset).
+atlas:
+	$$(CC) -O2 tools/dump_font.c -o build/dump_font $$(pkg-config --cflags --libs freetype2) -lm
+	build/dump_font tools/DejaVuSans-subset.ttf tools/font_atlas.bin
+	xxd -i tools/font_atlas.bin > src/font_atlas.h
 
 clean:
 	rm -f winmine
 
-.PHONY: clean
+distclean: clean
+	rm -rf build third_party/SDL2-release-*
+
+.PHONY: deps sys atlas clean distclean

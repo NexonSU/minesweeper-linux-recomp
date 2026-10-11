@@ -21,11 +21,21 @@ assets/digits_color.png  assets/digits_mono.png
 assets/faces_color.png   assets/faces_mono.png
 assets/cells_*/          assets/digits_*/   assets/faces_*/
 assets/tick.wav          assets/win.wav     assets/boom.wav
-assets/icon_8.ico        assets/WINMINE.HLP
+assets/icon_8.ico        assets/icon_8.png  assets/WINMINE.HLP
 ```
 
 Все они извлечены из оригинального исполняемого файла `WINMINE.EXE`
-(Minesweeper, Microsoft). Права на них не передаются.
+(Minesweeper, Microsoft); `icon_8.png` — PNG-конвертация извлечённой
+иконки. Права на них не передаются.
+
+## Сторонние компоненты в репозитории (не Microsoft)
+
+- `third_party/stb/stb_image.h` — public domain (см. `third_party/stb/LICENSE`).
+- `tools/DejaVuSans-subset.ttf` + `tools/DejaVuSans-LICENSE.txt` —
+  подмножество DejaVu Sans под лицензией Bitstream Vera; его заранее
+  отрендеренные глифы встроены в бинарник (`src/font_atlas.h`).
+- SDL2 (лицензия zlib) скачивается и собирается локально через `make deps`
+  и в репозиторий не входит.
 
 ## Статус проекта
 

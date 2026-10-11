@@ -66,3 +66,9 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# bundled SDL2 source/build fetched by `make deps`
+third_party/SDL2-release-*/
+
+# compiled offline tools
+tools/dump_font

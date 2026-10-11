@@ -13,7 +13,6 @@
  */
 #include "winmine.h"
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <stdio.h>
 
 static SDL_Window *g_window = NULL;
@@ -44,14 +43,12 @@ static SDL_Surface *load_sheet(const char *dir, const char *name)
 {
     char path[600];
     snprintf(path, sizeof(path), "%s/%s", dir, name);
-    SDL_Surface *s = IMG_Load(path);
+    SDL_Surface *s = stb_load_surface(path);
     if (!s) {
-        fprintf(stderr, "IMG_Load %s: %s\n", path, IMG_GetError());
+        fprintf(stderr, "load_sheet %s: image decode failed\n", path);
         return NULL;
     }
-    SDL_Surface *opt = SDL_ConvertSurfaceFormat(s, SDL_PIXELFORMAT_ABGR8888, 0);
-    SDL_FreeSurface(s);
-    return opt;
+    return s;
 }
 
 static char g_asset_dir[512];

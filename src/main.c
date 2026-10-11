@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>
+#include <unistd.h>
 #include <unistd.h>
 #include <limits.h>
 
@@ -58,6 +60,7 @@ static void resolve_asset_dir(char *out, size_t n)
         exe[len] = 0;
         char *slash = strrchr(exe, '/');
         if (slash) {
+            *slash = 0;
             snprintf(out, n, "%.*s/assets", 400, exe);
             if (access(out, 0) == 0) return;
         }
