@@ -91,6 +91,7 @@ void gm_resume(void);                     /* 344c */
 
 /* ---- rendering (render.c) ---- */
 SDL_Surface *stb_load_surface(const char *path);   /* PNG -> ARGB8888 (stb_image) */
+SDL_Surface *stb_load_surface_mem(const void *data, int len);   /* PNG bytes in memory */
 int  render_init(const char *asset_dir);
 const char *render_asset_dir(void);
 void render_free_assets(void);

@@ -5,11 +5,8 @@
 #include "stb_image.h"
 #include "winmine.h"
 
-SDL_Surface *stb_load_surface(const char *path)
+static SDL_Surface *surface_from_px(unsigned char *px, int w, int h)
 {
-    int w = 0, h = 0, ch = 0;
-    unsigned char *px = stbi_load(path, &w, &h, &ch, 4);
-    if (!px) return NULL;
     SDL_Surface *s = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_ARGB8888);
     if (!s) {
         stbi_image_free(px);
@@ -24,4 +21,20 @@ SDL_Surface *stb_load_surface(const char *path)
     }
     stbi_image_free(px);
     return s;
+}
+
+SDL_Surface *stb_load_surface(const char *path)
+{
+    int w = 0, h = 0, ch = 0;
+    unsigned char *px = stbi_load(path, &w, &h, &ch, 4);
+    if (!px) return NULL;
+    return surface_from_px(px, w, h);
+}
+
+SDL_Surface *stb_load_surface_mem(const void *data, int len)
+{
+    int w = 0, h = 0, ch = 0;
+    unsigned char *px = stbi_load_from_memory((const unsigned char *)data, len, &w, &h, &ch, 4);
+    if (!px) return NULL;
+    return surface_from_px(px, w, h);
 }

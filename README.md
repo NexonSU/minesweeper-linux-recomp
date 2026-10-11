@@ -40,7 +40,9 @@ the right (Expert 30×16/99, Game menu open) next to the original
    with vendored `stb_image`; menu/dialog text is drawn from a pre-rendered
    DejaVuSans glyph atlas (dumped offline with FreeType, pixel-identical to
    SDL2_ttf's output) embedded in the binary — no SDL2_image/SDL2_ttf or
-   font files are needed at runtime.
+   font files are needed at runtime.  Sprite sheets, the icon and the WAV
+   sounds are embedded into the binary too (`src/assets_data.h`), mirroring
+   the original's PE resources.
 4. **Verification.** Port behavior compared against the original running
    under wine: dialog screenshots, click/counter tracing, quirk checks
    (F4 does not persist sound, Custom changes difficulty even on Cancel,
@@ -69,15 +71,16 @@ OpenCode session.
 
 ## Build
 
-The default build bundles all dependencies into the binary: it statically
-links SDL2 2.32.10 built from source, decodes PNGs with vendored `stb_image`
-and renders text from the embedded glyph atlas.  The resulting `winmine`
-needs no SDL/font packages installed (X11/Wayland and ALSA/PulseAudio
-backends are loaded dynamically at runtime).
+The default build bundles everything into the binary: it statically links
+SDL2 2.32.10 built from source, decodes PNGs with vendored `stb_image`,
+renders text from the embedded glyph atlas and embeds the game assets
+(sprite sheets, icon, WAV sounds).  The resulting `winmine` runs standalone
+with no SDL/font packages and no asset files installed (X11/Wayland and
+ALSA/PulseAudio backends are loaded dynamically at runtime).
 
 ```sh
 make deps     # fetch + build static SDL2 2.32.10 (needs curl, cmake, X11 dev headers)
-make          # -> ./winmine (~2.5 MB, statically linked)
+make          # -> ./winmine (~2.6 MB, self-contained)
 ./winmine
 ```
 
@@ -88,9 +91,10 @@ pkg-config package required):
 make sys
 ```
 
-`assets/` must sit next to the binary (resolved via `/proc/self/exe`, else
-`./assets` relative to cwd); `WINMINE.HLP` lives there too, used by the Help
-menu entry.
+`make assets` regenerates the embedded asset blobs from `assets/` (needs
+`xxd`).  Files in an `assets/` directory next to the binary override the
+embedded copies (handy for mods); `WINMINE.HLP` stays external — the Help
+menu entry hands it to the system's help viewer.
 
 ## Layout
 
@@ -99,6 +103,8 @@ src/          port sources (C11 + SDL2)
 tools/        offline glyph-atlas dumper (FreeType), DejaVu subset + license
 third_party/  vendored stb_image (SDL2 source is fetched by `make deps`)
 assets/       sprites, WAVs, icon, HLP extracted from the original
+              (embedded into the binary by `make assets`; external copies
+              override the embedded ones, HLP stays external)
 docs/         Strata engine and OpenCode configuration descriptions, screenshots
 Makefile      build
 ```

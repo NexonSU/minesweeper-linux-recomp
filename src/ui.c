@@ -8,6 +8,7 @@
  */
 #include "winmine.h"
 #include "font_atlas.h"
+#include "assets_data.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -706,6 +707,8 @@ static SDL_Surface *load_icon(void)
         char path[600];
         snprintf(path, sizeof(path), "%s/icon_8.png", render_asset_dir());
         ic = stb_load_surface(path);
+        if (!ic)
+            ic = stb_load_surface_mem(icon_8_png, (int)icon_8_png_len);
     }
     return ic;
 }

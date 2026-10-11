@@ -26,7 +26,9 @@ assets/icon_8.ico        assets/icon_8.png  assets/WINMINE.HLP
 
 All of them were extracted from the original `WINMINE.EXE` executable
 (Minesweeper, Microsoft); `icon_8.png` is a PNG conversion of the extracted
-icon. No rights to them are granted.
+icon. No rights to them are granted.  The runtime copies of these assets are
+also embedded into the compiled binary (`src/assets_data.h`); the same
+ownership disclaimer applies to them.
 
 ## Bundled third-party components (not Microsoft)
 
@@ -49,5 +51,7 @@ present in this repository.
 ## If you are the rights holder
 
 The rights holder may request removal of the extracted assets — they will
-be removed upon first contact. The port remains functional: the `assets/`
-directory can be regenerated from a legally obtained copy of `WINMINE.EXE`.
+be removed upon first contact (including their embedded copies in
+`src/assets_data.h`).  The port remains functional: the `assets/` directory
+can be regenerated from a legally obtained copy of `WINMINE.EXE` and takes
+precedence over the embedded ones.
