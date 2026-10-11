@@ -1,0 +1,54 @@
+# NOTICE / Правовая оговорка
+
+[English](NOTICE) | [Русский](NOTICE_RU)
+
+## К какому коду применяется MIT
+
+Файл `LICENSE` (MIT) применяется **только к оригинальным материалам этого
+проекта**: исходникам `src/`, `Makefile`, документации `README.md` и `docs/`,
+написанным с нуля в ходе данного эксперимента.
+
+## Что НЕ лицензируется MIT
+
+Следующие файлы являются собственностью **Microsoft Corporation** и включены
+в репозиторий исключительно в исследовательских целях (демонстрация
+совместимости реимплементации). Они **не** являются частью «Software» по
+смыслу MIT-лицензии и не лицензируются ею:
+
+```
+assets/cells_color.png   assets/cells_mono.png
+assets/digits_color.png  assets/digits_mono.png
+assets/faces_color.png   assets/faces_mono.png
+assets/cells_*/          assets/digits_*/   assets/faces_*/
+assets/tick.wav          assets/win.wav     assets/boom.wav
+assets/icon_8.ico        assets/WINMINE.HLP
+```
+
+Все они извлечены из оригинального исполняемого файла `WINMINE.EXE`
+(Minesweeper, Microsoft). Права на них не передаются.
+
+## Статус проекта
+
+Это **неофициальный** фанатский порт. Проект не связан с Microsoft, не
+одобрен ею и не аффилирован с ней. «Minesweeper» — товарный знак
+Microsoft Corporation.
+
+Игровая механика воспроизведена независимо (clean-room) по результатам
+анализа поведения программы; оригинальный исполняемый файл и его исходный
+код в репозитории отсутствуют.
+
+## Если вы правообладатель
+
+Правообладатель может запросить удаление извлечённых ассетов — они будут
+убраны по первому обращению. Порт при этом сохраняет работоспособность:
+каталог `assets/` можно восстановить из собственной легальной копии
+`WINMINE.EXE`.
+
+---
+
+*The MIT License in `LICENSE` covers only the original source code and
+documentation of this repository. Files under `assets/` are extracted from
+Microsoft's `WINMINE.EXE`, remain Microsoft's property, and are included
+for research/compatibility purposes only. This is an unofficial fan port,
+not affiliated with or endorsed by Microsoft. "Minesweeper" is a trademark
+of Microsoft Corporation.*

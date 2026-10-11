@@ -1,90 +1,94 @@
 # Minesweeper Linux Recomp
 
-**PoC декомпиляции и портирования игры Minesweeper (`WINMINE.EXE`, эпоха
-Windows XP) на Linux силами локальной LLM без обращения к внешним сервисам.**
+[English](README.md) | [Русский](README_RU.md)
 
-Цель эксперимента — проверить, способна ли локально запущенная модель
-полностью разобрать нативный Windows-бинарник, восстановить его логику и
-написать на её основе независимую реализацию, воспроизводящую оригинал
-включая поведение, ресурсы и даже quirks.
+**A PoC of decompiling and porting the game Minesweeper (`WINMINE.EXE`,
+Windows XP era) to Linux by a locally running LLM, with no external
+services involved.**
 
-> **Неофициальный фанатский порт.** Проект не связан с Microsoft и не
-> одобрен ею. «Minesweeper» — товарный знак Microsoft Corporation.
-> Правовая оговорка о статусе файлов — в [`NOTICE`](NOTICE).
+The goal of the experiment: can a locally hosted model fully dissect a
+native Windows binary, reconstruct its logic, and produce an independent
+implementation that reproduces the original — including behavior, assets,
+and even its quirks.
 
-## Первый запуск порта
+> **Unofficial fan port.** This project is not affiliated with or endorsed
+> by Microsoft. "Minesweeper" is a trademark of Microsoft Corporation.
+> File-status disclaimer: see [`NOTICE`](NOTICE).
 
-![Первый запуск](docs/first-run.png)
+## First run of the port
 
-Скриншот первого запуска: слева — сессия OpenCode, справа — окно порта
-(Expert 30×16/99, открытое меню Game) рядом с оригинальным `WINMINE.EXE`.
+![First run](docs/first-run.png)
 
-## Как это было сделано
+First-run screenshot: OpenCode session on the left, the port's window on
+the right (Expert 30×16/99, Game menu open) next to the original
+`WINMINE.EXE`.
 
-1. **Реверс-инжиниринг.** Через MCP-сервер REA (`rea-agents`) модель
-   декомпилировала `WINMINE.EXE` в Ghidra: ~150 функций восстановлены в
-   псевдокод, разобраны ресурсы EXE (спрайты клеток/цифр/лиц, диалоги,
-   меню, WAV-звуки), извлечены оригинальные ассеты в `assets/`.
-2. **Построение модели данных.** По псевдокоду восстановлены: сетка
-   `DAT_01005340[32*27]` с кольцом границы, состояния клеток (флаг,
-   вопрос, мина, взорвавшаяся), счётчики, логика первого безопасного
-   клика, flood-fill через кольцевую очередь на 100 слотов (как в
-   оригинале), чорды, пауза, XYZZY-код.
-3. **Портирование.** Написан независимый код на C11 + SDL2/SDL2_image/
-   SDL2_ttf: собственный меню-бар, Win95-стиль модальных диалогов
-   (Custom Field, Best Times, About, ввод имени), persistence в
-   `~/.config/winmine/winmine.cfg`.
-4. **Верификация.** Поведение порта сверялось с оригиналом, запущенным
-   под wine: скриншоты диалогов, трассировка кликов/счётчиков, проверка
-   quirks (F4 не сохраняет звук, Custom меняет сложность даже при Cancel,
-   Marks-галочки, цикл флагов при выключенных метках).
+## How it was made
 
-## Окружение
+1. **Reverse engineering.** Through the REA MCP server (`rea-agents`) the
+   model decompiled `WINMINE.EXE` in Ghidra: ~150 functions recovered into
+   pseudocode, the EXE's resources parsed (cell/digit/face sprites,
+   dialogs, menus, WAV sounds), original assets extracted into `assets/`.
+2. **Data-model reconstruction.** From the pseudocode: the
+   `DAT_01005340[32*27]` grid with its border ring, cell states (flag,
+   question, mine, exploded), counters, first-click-is-safe logic,
+   flood-fill through a 100-slot ring queue (exactly like the original),
+   chords, pause, the XYZZY code.
+3. **Porting.** Independent code written in C11 + SDL2/SDL2_image/SDL2_ttf:
+   custom menu bar, Win95-style modal dialogs (Custom Field, Best Times,
+   About, name entry), persistence in `~/.config/winmine/winmine.cfg`.
+4. **Verification.** Port behavior compared against the original running
+   under wine: dialog screenshots, click/counter tracing, quirk checks
+   (F4 does not persist sound, Custom changes difficulty even on Cancel,
+   Marks checkmarks, flag cycle with marks disabled).
+
+## Environment
 
 | | |
 |---|---|
-| **ОС** | CachyOS x86_64 (Arch-based), ядро Linux 7.2.9-2-cachyos |
-| **Рабочий стол** | KDE Plasma 6.7.5, KWin (Wayland) |
-| **CPU** | AMD Ryzen 9 9950X3D (16C/32T, до 5.76 ГГц) |
-| **GPU** | NVIDIA GeForce RTX 5090 (дискретная, GB202) + AMD Radeon 610M (встроенная) |
+| **OS** | CachyOS x86_64 (Arch-based), Linux kernel 7.2.9-2-cachyos |
+| **Desktop** | KDE Plasma 6.7.5, KWin (Wayland) |
+| **CPU** | AMD Ryzen 9 9950X3D (16C/32T, up to 5.76 GHz) |
+| **GPU** | NVIDIA GeForce RTX 5090 (discrete, GB202) + AMD Radeon 610M (integrated) |
 | **RAM** | 123.45 GiB |
-| **Диски** | btrfs: `/` 931 GiB, `/home` 2.73 TiB |
-| **Мониторы** | 3840×2160 ViewSonic PJ + PG32UCDP 32" 240 Hz |
-| **Модель** | `qwen3.8-flash-next-iq3_xxs` — Qwen3.8-Flash-Next, квантование IQ3_XXS (GGUF, MoE, MTP-спекуляция, vision) |
-| **Движок** | [Strata](docs/strata.md) — локальный инференс-сервер (`/home/nexonsu/.strata/`, запуск через `run-iq3_xxs.sh`, OpenAI-совместимый API на :8080) |
-| **Агент** | [OpenCode](docs/opencode.md) + MCP REA (Ghidra) |
+| **Disks** | btrfs: `/` 931 GiB, `/home` 2.73 TiB |
+| **Monitors** | 3840×2160 ViewSonic PJ + PG32UCDP 32" 240 Hz |
+| **Model** | `qwen3.8-flash-next-iq3_xxs` — Qwen3.8-Flash-Next, IQ3_XXS quantization (GGUF, MoE, MTP speculation, vision) |
+| **Engine** | [Strata](docs/strata.md) — local inference server (`/home/nexonsu/.strata/`, launched via `run-iq3_xxs.sh`, OpenAI-compatible API on :8080) |
+| **Agent** | [OpenCode](docs/opencode.md) + MCP REA (Ghidra) |
 
-Полный снимок системы — в [`docs/fastfetch.txt`](docs/fastfetch.txt).
+Full system snapshot: [`docs/fastfetch.txt`](docs/fastfetch.txt).
 
-Вся работа — декомпиляция, написание кода, сборка, отладка и визуальная
-верификация — выполнена моделью автономно в сессии OpenCode.
+All of the work — decompilation, code writing, building, debugging and
+visual verification — was performed autonomously by the model inside an
+OpenCode session.
 
-## Сборка
+## Build
 
-Зависимости: `sdl2`, `sdl2_image`, `sdl2_ttf` (pkg-config).
+Dependencies: `sdl2`, `sdl2_image`, `sdl2_ttf` (pkg-config).
 
 ```sh
 make        # -> ./winmine
 ./winmine
 ```
 
-`assets/` должен лежать рядом с бинарником (или в `./assets` относительно
-cwd) — туда же помещён `WINMINE.HLP` для пункта меню Help.
+`assets/` must sit next to the binary (or at `./assets` relative to cwd);
+`WINMINE.HLP` lives there too, used by the Help menu entry.
 
-## Структура
+## Layout
 
 ```
-src/        исходники порта (C11 + SDL2)
-assets/     извлечённые из оригинала спрайты, WAV, иконка, HLP
-docs/       описание движка Strata, конфигурации OpenCode, скриншоты
-Makefile    сборка
+src/        port sources (C11 + SDL2)
+assets/     sprites, WAVs, icon, HLP extracted from the original
+docs/       Strata engine and OpenCode configuration descriptions, screenshots
+Makefile    build
 ```
 
-## Лицензия
+## License
 
-Оригинальный код проекта (`src/`, `Makefile`, документация) — под
-[MIT](LICENSE). Игровая механика воспроизведена независимо (clean-room),
-оригинальный `WINMINE.EXE` и его код в репозитории отсутствуют.
+The project's original code (`src/`, `Makefile`, documentation) is under
+[MIT](LICENSE). Game mechanics were reproduced independently (clean-room);
+the original `WINMINE.EXE` and its code are not present in this repository.
 
-Файлы в `assets/` извлечены из `WINMINE.EXE`, остаются собственностью
-Microsoft и **не** лицензируются MIT — см. [`NOTICE`](NOTICE).
+Files in `assets/` are extracted from `WINMINE.EXE`, remain Microsoft
+property and are **not** licensed under MIT — see [`NOTICE`](NOTICE).

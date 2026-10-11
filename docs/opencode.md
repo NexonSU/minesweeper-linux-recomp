@@ -1,11 +1,13 @@
-# Конфигурация OpenCode
+# OpenCode configuration
 
-Файл: `/home/nexonsu/.config/opencode/opencode.json` (копия в этом каталоге)
+[English](opencode.md) | [Русский](opencode_RU.md)
 
-**OpenCode** — агентная среда (TUI), в которой локальная модель вела всю
-работу по декомпиляции и портированию.
+File: `/home/nexonsu/.config/opencode/opencode.json` (copy in this directory)
 
-## Провайдер `Strata`
+**OpenCode** is the agent environment (TUI) in which the local model did
+all the decompilation and porting work.
+
+## The `Strata` provider
 
 ```json
 "Strata": {
@@ -20,21 +22,21 @@
 }
 ```
 
-- Подключение к локальному движку Strata по OpenAI-совместимому API
-  (адрес машины в локальной сети, порт 8080).
-- Рабочая модель: `qwen3.8-flash-next-iq3_xxs` (100K входного контекста,
-  50K выходных токенов). Также объявлена `orcarouter-...-uncensored-iq3_xxs`.
+- Connects to the local Strata engine through an OpenAI-compatible API
+  (the machine's LAN address, port 8080).
+- Working model: `qwen3.8-flash-next-iq3_xxs` (100K input context,
+  50K output tokens). `orcarouter-...-uncensored-iq3_xxs` is also declared.
 
-## Компакция контекста
+## Context compaction
 
 ```json
 "compaction": { "auto": true, "keep": { "tokens": 10000 }, "buffer": 10000 }
 ```
 
-Автоматическое сжатие истории длинных сессий (сессия портирования шла
-часами и несколько раз компактировалась).
+Automatic history compaction for long sessions (the porting session ran
+for hours and was compacted several times).
 
-## MCP-сервер `rea` — инструменты реверс-инжиниринга
+## The `rea` MCP server — reverse-engineering tools
 
 ```json
 "mcp": {
@@ -49,7 +51,7 @@
 }
 ```
 
-REA (Reverse Engineering Agents) дала агенту прямой доступ к **Ghidra**:
-декомпиляция `WINMINE.EXE` в псевдокод, разбор ресурсов (битмапы, диалоги,
-меню), извлечение спрайтов и WAV. Именно через REA были получены все
-заметки реверса, на которых построен этот порт.
+REA (Reverse Engineering Agents) gave the model direct access to
+**Ghidra**: decompiling `WINMINE.EXE` into pseudocode, parsing resources
+(bitmaps, dialogs, menus), extracting sprites and WAVs. All reverse-engineering
+notes this port is built on came from it.

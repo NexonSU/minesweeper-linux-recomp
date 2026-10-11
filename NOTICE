@@ -1,17 +1,19 @@
-# NOTICE / Правовая оговорка
+# NOTICE / Legal disclaimer
 
-## К какому коду применяется MIT
+[English](NOTICE) | [Русский](NOTICE_RU)
 
-Файл `LICENSE` (MIT) применяется **только к оригинальным материалам этого
-проекта**: исходникам `src/`, `Makefile`, документации `README.md` и `docs/`,
-написанным с нуля в ходе данного эксперимента.
+## What the MIT license covers
 
-## Что НЕ лицензируется MIT
+The `LICENSE` file (MIT) applies **only to this project's original
+materials**: the `src/` sources, `Makefile`, and the `README.md` / `docs/`
+documentation written from scratch during this experiment.
 
-Следующие файлы являются собственностью **Microsoft Corporation** и включены
-в репозиторий исключительно в исследовательских целях (демонстрация
-совместимости реимплементации). Они **не** являются частью «Software» по
-смыслу MIT-лицензии и не лицензируются ею:
+## What is NOT under MIT
+
+The following files are property of **Microsoft Corporation** and are
+included in this repository for research purposes only (demonstrating the
+reimplementation's compatibility). They are **not** part of the "Software"
+as meant by the MIT license and are not licensed under it:
 
 ```
 assets/cells_color.png   assets/cells_mono.png
@@ -22,31 +24,20 @@ assets/tick.wav          assets/win.wav     assets/boom.wav
 assets/icon_8.ico        assets/WINMINE.HLP
 ```
 
-Все они извлечены из оригинального исполняемого файла `WINMINE.EXE`
-(Minesweeper, Microsoft). Права на них не передаются.
+All of them were extracted from the original `WINMINE.EXE` executable
+(Minesweeper, Microsoft). No rights to them are granted.
 
-## Статус проекта
+## Project status
 
-Это **неофициальный** фанатский порт. Проект не связан с Microsoft, не
-одобрен ею и не аффилирован с ней. «Minesweeper» — товарный знак
-Microsoft Corporation.
+This is an **unofficial** fan port. It is not affiliated with or endorsed
+by Microsoft. "Minesweeper" is a trademark of Microsoft Corporation.
 
-Игровая механика воспроизведена независимо (clean-room) по результатам
-анализа поведения программы; оригинальный исполняемый файл и его исходный
-код в репозитории отсутствуют.
+Game mechanics were reproduced independently (clean-room) based on observed
+program behavior; the original executable and its source code are not
+present in this repository.
 
-## Если вы правообладатель
+## If you are the rights holder
 
-Правообладатель может запросить удаление извлечённых ассетов — они будут
-убраны по первому обращению. Порт при этом сохраняет работоспособность:
-каталог `assets/` можно восстановить из собственной легальной копии
-`WINMINE.EXE`.
-
----
-
-*The MIT License in `LICENSE` covers only the original source code and
-documentation of this repository. Files under `assets/` are extracted from
-Microsoft's `WINMINE.EXE`, remain Microsoft's property, and are included
-for research/compatibility purposes only. This is an unofficial fan port,
-not affiliated with or endorsed by Microsoft. "Minesweeper" is a trademark
-of Microsoft Corporation.*
+The rights holder may request removal of the extracted assets — they will
+be removed upon first contact. The port remains functional: the `assets/`
+directory can be regenerated from a legally obtained copy of `WINMINE.EXE`.
