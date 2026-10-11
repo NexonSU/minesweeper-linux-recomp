@@ -39,6 +39,7 @@ int sound_init(void)
         tick_buf = NULL;
         return 0;
     }
+    SDL_PauseAudioDevice(dev, 0);   /* newly opened devices start paused */
     SDL_AudioSpec tmp;
     load_wav(dir, "win.wav", &win_buf, &win_len, &tmp);
     load_wav(dir, "boom.wav", &boom_buf, &boom_len, &tmp);

@@ -529,6 +529,10 @@ int ui_menu_open(int top)
     int open = top, sel = -1, cmd = 0, done = 0;
     SDL_Window *win = render_window();
     Uint32 winid = SDL_GetWindowID(win);
+    /* Win32 menus capture the mouse: a click anywhere outside the menu
+     * (even outside the window) closes it.  SDL_CaptureMouse delivers
+     * out-of-window button events so the same works here. */
+    SDL_CaptureMouse(SDL_TRUE);
 
     while (!done && !g_quit) {
         paint_all();
@@ -592,11 +596,19 @@ int ui_menu_open(int top)
             break;
         case SDL_WINDOWEVENT:
             if (e.window.event == SDL_WINDOWEVENT_CLOSE) { g_quit = 1; done = 1; }
+            else if (e.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
+                done = 1;   /* Win32 menus close when focus is lost; this also
+                             * covers outside clicks on Wayland (no mouse capture) */
             break;
         }
     }
     G.menu_loop = 0;
     dd_top = -1;
+    SDL_CaptureMouse(SDL_FALSE);
+    /* closing without a command (title click / Escape / click outside):
+     * repaint what the dropdown covered, otherwise its pixels stay on screen */
+    paint_all();
+    render_present();
     return cmd;
 }
 
