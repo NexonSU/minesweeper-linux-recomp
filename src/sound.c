@@ -31,6 +31,11 @@ int sound_init(void)
     const char *dir = render_asset_dir();
     if (!load_wav(dir, "tick.wav", &tick_buf, &tick_len, &tick_spec))
         return 0;
+    /* deliberate deviation from the original: halve the tick amplitude so
+     * the timer sound is quieter (8-bit unsigned PCM, silence = 128) */
+    if (tick_spec.format == AUDIO_U8)
+        for (Uint32 i = 0; i < tick_len; i++)
+            tick_buf[i] = (Uint8)(128 + ((int)tick_buf[i] - 128) / 2);
     spec = tick_spec;
     dev = SDL_OpenAudioDevice(0, 0, &spec, NULL, 0);
     if (!dev) {
