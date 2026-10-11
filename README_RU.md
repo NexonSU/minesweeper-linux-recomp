@@ -59,7 +59,7 @@ Windows XP) на Linux силами локальной LLM без обращен
 | **Диски** | btrfs: `/` 931 GiB, `/home` 2.73 TiB |
 | **Мониторы** | 3840×2160 ViewSonic PJ + PG32UCDP 32" 240 Hz |
 | **Модель** | `qwen3.8-flash-next-iq3_xxs` — Qwen3.8-Flash-Next, квантование IQ3_XXS (GGUF, MoE, MTP-спекуляция, vision) |
-| **Движок** | [Strata](docs/strata_RU.md) — локальный инференс-сервер (`/home/nexonsu/.strata/`, запуск через `run-iq3_xxs.sh`, OpenAI-совместимый API на :8080) |
+| **Движок** | [Strata](https://github.com/Niko1221/Strata) ([документация](docs/strata_RU.md)) — локальный инференс-сервер (`/home/nexonsu/.strata/`, запуск через `run-iq3_xxs.sh`, OpenAI-совместимый API на :8080) |
 | **Агент** | [OpenCode](docs/opencode_RU.md) + MCP REA (Ghidra) |
 
 Полный снимок системы — в [`docs/fastfetch.txt`](docs/fastfetch.txt).

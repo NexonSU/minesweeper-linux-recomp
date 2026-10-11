@@ -60,7 +60,7 @@ the right (Expert 30×16/99, Game menu open) next to the original
 | **Disks** | btrfs: `/` 931 GiB, `/home` 2.73 TiB |
 | **Monitors** | 3840×2160 ViewSonic PJ + PG32UCDP 32" 240 Hz |
 | **Model** | `qwen3.8-flash-next-iq3_xxs` — Qwen3.8-Flash-Next, IQ3_XXS quantization (GGUF, MoE, MTP speculation, vision) |
-| **Engine** | [Strata](docs/strata.md) — local inference server (`/home/nexonsu/.strata/`, launched via `run-iq3_xxs.sh`, OpenAI-compatible API on :8080) |
+| **Engine** | [Strata](https://github.com/Niko1221/Strata) ([docs](docs/strata.md)) — local inference server (`/home/nexonsu/.strata/`, launched via `run-iq3_xxs.sh`, OpenAI-compatible API on :8080) |
 | **Agent** | [OpenCode](docs/opencode.md) + MCP REA (Ghidra) |
 
 Full system snapshot: [`docs/fastfetch.txt`](docs/fastfetch.txt).
