@@ -1,0 +1,49 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "Strata": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Strata (Local)",
+      "options": {
+        "baseURL": "http://192.168.50.4:8080/v1"
+      },
+      "models": {
+        "qwen3.8-flash-next-iq3_xxs": {
+          "name": "qwen3.8-flash-next-iq3_xxs",
+          "limit": {
+            "context": 100000,
+            "output": 50000
+          }
+        },
+        "orcarouter-qwen3.8-flash-next-uncensored-iq3_xxs": {
+          "name": "orcarouter-qwen3.8-flash-next-uncensored-iq3_xxs",
+          "limit": {
+            "context": 100000,
+            "output": 50000
+          }
+        }
+      }
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "keep": { "tokens": 10000 },
+    "buffer": 10000
+  },
+  "mcp": {
+    "rea": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "rea-agents@6.3.0",
+        "mcp"
+      ],
+      "enabled": true,
+      "environment": {
+        "GHIDRA_INSTALL_DIR": "/opt/ghidra",
+        "JAVA_HOME": "/usr/lib/jvm/java-27-openjdk"
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+nexonsu@home
+------------
+OS: CachyOS x86_64
+Kernel: Linux 7.2.9-2-cachyos
+Uptime: 2 hours, 26 mins
+Packages: 14 (flatpak), 1987 (pacman)
+Shell: bash 5.3.20
+Display (ViewSonic PJ): 3840x2160 @ 2x, 60 Hz [External] *
+Display (PG32UCDP): 3840x2160 @ 2x in 32", 240 Hz [External]
+Desktop Environment: KDE Plasma 6.7.5
+Window Manager: KWin (Wayland)
+WM Theme: Breeze
+Theme: Breeze (Dark) [Qt], Breeze-Dark [GTK2], Breeze [GTK3]
+Icons: breeze-dark [Qt], breeze-dark [GTK2/3/4]
+Font: Noto Sans (10pt) [Qt], Noto Sans (10pt) [GTK2/3/4]
+Cursor: Breeze_Light (24px)
+Terminal: opencode
+CPU: AMD Ryzen 9 9950X3D (32) @ 5.76 GHz
+GPU 1: NVIDIA GeForce RTX 5090 [Discrete]
+GPU 2: AMD Radeon 610M [Integrated]
+Memory: 59.34 GiB / 123.45 GiB (48%)
+Swap: 3.16 MiB / 123.45 GiB (0%)
+Disk (/): 230.44 GiB / 931.01 GiB (25%) - btrfs
+Disk (/home): 1.84 TiB / 2.73 TiB (68%) - btrfs
+Local IP (enp1s0f0): 192.168.50.4/24
+Locale: ru_RU.UTF-8
+
+                        
+                        
